@@ -28,13 +28,14 @@ interface TodoListProps {
 export default function TodoList({ lists }: TodoListProps) {
   const [newName, setNewName] = useState<string>("");
 
-  const [dueDate, setDueDate] = useState<Date>();
+  const [dueDate, setDueDate] = useState<Date>(new Date());
 
   const [state, action, isPending] = useActionState(addToList, lists);
 
   const [optimisticState, addOptimistic] = useOptimistic(
     state,
-    (state, newTodoItem) => [
+    // @todo Provide type instead of `any`
+    (state, newTodoItem: any) => [
       ...state,
       {
         ...newTodoItem,
@@ -61,7 +62,7 @@ export default function TodoList({ lists }: TodoListProps) {
             name: newName,
             dueDate,
           };
-          if (!newItem.name) {
+          if (!newItem.name || !newItem.dueDate) {
             return;
           }
           addOptimistic(newItem);
@@ -108,7 +109,7 @@ export default function TodoList({ lists }: TodoListProps) {
               <Calendar
                 mode="single"
                 selected={dueDate}
-                onSelect={setDueDate}
+                onSelect={(date) => setDueDate(date ?? new Date())}
               />
             </div>
           </PopoverContent>
