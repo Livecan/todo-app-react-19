@@ -1,6 +1,6 @@
 "use client";
 
-import addToList from "@/app/actions/addToList";
+import addToList from "@/actions/addToList";
 import { useActionState, useOptimistic, useState } from "react";
 
 interface TodoListProps {
