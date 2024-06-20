@@ -29,8 +29,9 @@ export default function AddTodoItem({ onAdded }: AddTodoItemProps) {
   return (
     <form
       action={() => {
-        addItem({ name: newName, dueDate }, onAdded);
+        addItem({ name: newName, dueDate });
       }}
+      onSubmit={onAdded}
     >
       <Input
         type="text"

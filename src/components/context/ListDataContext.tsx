@@ -14,12 +14,11 @@ interface TodoItem {
   dueDate: Date;
 }
 
+type NewTodoItem = Omit<TodoItem, "id">;
+
 export const ListDataContext = createContext<{
   list: TodoItem[];
-  addItem: (
-    newItem: Omit<TodoItem, "id">,
-    optimisticAction?: () => unknown
-  ) => unknown;
+  addItem: (newItem: NewTodoItem) => unknown;
 }>({ list: [], addItem: () => [] });
 
 export default function ListDataContextProvider({
@@ -31,8 +30,7 @@ export default function ListDataContextProvider({
   const [optimisticState, addOptimistic] = useOptimistic(
     state,
     // @todo Provide type instead of `any`
-    (state, { newItem, optimisticAction }) => {
-      optimisticAction?.();
+    (state, newItem: NewTodoItem) => {
       return [
         ...state,
         {
@@ -48,11 +46,11 @@ export default function ListDataContextProvider({
     <ListDataContext.Provider
       value={{
         list: optimisticState,
-        addItem(newItem, optimisticAction) {
+        addItem(newItem) {
           if (!newItem.name || !newItem.dueDate) {
             return;
           }
-          addOptimistic({ newItem, optimisticAction });
+          addOptimistic(newItem);
           action(newItem);
         },
       }}
