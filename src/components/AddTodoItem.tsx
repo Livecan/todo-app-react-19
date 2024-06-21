@@ -25,26 +25,32 @@ export default function AddTodoItem({ onAdded }: AddTodoItemProps) {
 
   const [newName, setNewName] = useState<string>("");
   const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [dateInputOpen, setDateInputOpen] = useState(false);
 
   return (
     <form
+      className="flex flex-col space-y-2 p-2"
       action={() => {
         addItem({ name: newName, dueDate });
       }}
       onSubmit={onAdded}
     >
       <Input
+        className="w-full"
         type="text"
         placeholder="Name"
         value={newName}
         onChange={(e) => setNewName(e.target.value)}
       />
-      <Popover>
+      <Popover
+        open={dateInputOpen}
+        onOpenChange={() => setDateInputOpen((dateInputOpen) => !dateInputOpen)}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              "w-[280px] justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal",
               !dueDate && "text-muted-foreground"
             )}
           >
@@ -54,9 +60,10 @@ export default function AddTodoItem({ onAdded }: AddTodoItemProps) {
         </PopoverTrigger>
         <PopoverContent className="flex w-auto flex-col space-y-2 p-2">
           <Select
-            onValueChange={(value) =>
-              setDueDate(addDays(new Date(), parseInt(value)))
-            }
+            onValueChange={(value) => {
+              setDueDate(addDays(new Date(), parseInt(value)));
+              setDateInputOpen(false);
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select" />
@@ -72,12 +79,17 @@ export default function AddTodoItem({ onAdded }: AddTodoItemProps) {
             <Calendar
               mode="single"
               selected={dueDate}
-              onSelect={(date) => setDueDate(date ?? new Date())}
+              onSelect={(date) => {
+                setDueDate(date ?? new Date());
+                setDateInputOpen(false);
+              }}
             />
           </div>
         </PopoverContent>
       </Popover>
-      <Button type="submit">Add another</Button>
+      <Button className="w-full" type="submit">
+        Add another
+      </Button>
     </form>
   );
 }

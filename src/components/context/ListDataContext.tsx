@@ -1,6 +1,6 @@
 "use client";
 
-import addToList from "@/actions/addToList";
+import { deleteItem, getItems, saveItem, updateItem } from "@/api/mongoClient";
 import {
   PropsWithChildren,
   createContext,
@@ -12,6 +12,7 @@ interface TodoItem {
   id: string;
   name: string;
   dueDate: Date;
+  completedDate?: Date;
 }
 
 type NewTodoItem = Omit<TodoItem, "id">;
@@ -19,26 +20,27 @@ type NewTodoItem = Omit<TodoItem, "id">;
 export const ListDataContext = createContext<{
   list: TodoItem[];
   addItem: (newItem: NewTodoItem) => unknown;
-}>({ list: [], addItem: () => [] });
+  editItem: (id: string, patch: Partial<NewTodoItem>) => unknown;
+  removeItem: (id: string) => unknown;
+}>({ list: [], addItem: () => [], editItem: () => {}, removeItem: () => {} });
 
 export default function ListDataContextProvider({
   list,
   children,
 }: PropsWithChildren<{ list: TodoItem[] }>) {
-  const [state, action, isPending] = useActionState(addToList, list);
+  const [state, action, isPending] = useActionState(
+    (_state: TodoItem[], action: () => TodoItem[] | Promise<TodoItem[]>) => {
+      console.log("calling action");
+      return action();
+    },
+    list
+  );
 
-  const [optimisticState, addOptimistic] = useOptimistic(
+  const [optimisticState, changeOptimistic] = useOptimistic(
     state,
-    // @todo Provide type instead of `any`
-    (state, newItem: NewTodoItem) => {
-      return [
-        ...state,
-        {
-          ...newItem,
-          id: `${Math.floor(Math.random() * 100000)}`,
-          name: `${newItem.name} (saving...)`,
-        },
-      ];
+    (state, update: (todoItems: TodoItem[]) => TodoItem[]) => {
+      console.log("use optimistic");
+      return update(state);
     }
   );
 
@@ -50,8 +52,48 @@ export default function ListDataContextProvider({
           if (!newItem.name || !newItem.dueDate) {
             return;
           }
-          addOptimistic(newItem);
-          action(newItem);
+          changeOptimistic((items) => [
+            ...items,
+            {
+              ...newItem,
+              id: `${Math.floor(Math.random() * 100000)}`,
+              name: `${newItem.name} (saving...)`,
+            },
+          ]);
+          action(async () => {
+            await saveItem(newItem);
+            return getItems({ filter: { completed: false } });
+          });
+        },
+        editItem(id, patch) {
+          changeOptimistic((items) =>
+            items.map((item) =>
+              item.id !== id
+                ? item
+                : {
+                    ...item,
+                    ...patch,
+                    name: `${patch.name ?? item.name} (saving...)`,
+                  }
+            )
+          );
+          action(async () => {
+            await updateItem(id, patch);
+            return getItems({ filter: { completed: false } });
+          });
+        },
+        removeItem(id) {
+          changeOptimistic((items) =>
+            items.map((item) =>
+              item.id === id
+                ? { ...item, name: `${item.name} (removing)` }
+                : item
+            )
+          );
+          action(async () => {
+            await deleteItem(id);
+            return getItems({ filter: { completed: false } });
+          });
         },
       }}
     >

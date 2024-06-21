@@ -14,7 +14,7 @@ export default function Navigation() {
     <Tabs
       value={selectedTab}
       onValueChange={(value) => setSelectedTab(value as TabType)}
-      className="w-[400px]"
+      className="w-full"
     >
       <TabsList className="grid w-full grid-cols-3">
         {TABS.map((tab) => (
